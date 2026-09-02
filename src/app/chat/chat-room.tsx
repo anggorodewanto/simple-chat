@@ -48,6 +48,8 @@ export function ChatRoom({ me }: { me: Me }) {
 
   const scroller = useRef<HTMLDivElement>(null);
   const pinnedToBottom = useRef(true);
+  // Newest message id held locally; the resume cursor for a reopened stream.
+  const lastSeenId = useRef(0);
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "auto") => {
     const element = scroller.current;
@@ -69,6 +71,8 @@ export function ChatRoom({ me }: { me: Me }) {
       const data = await response.json();
       setMessages(data.messages);
       setHasMore(data.hasMore);
+      const newest = data.messages.at(-1) as Message | undefined;
+      if (newest) lastSeenId.current = Math.max(lastSeenId.current, newest.id);
       requestAnimationFrame(() => scrollToBottom());
     })();
 
@@ -77,19 +81,49 @@ export function ChatRoom({ me }: { me: Me }) {
     };
   }, [router, scrollToBottom]);
 
-  // Live feed. EventSource reconnects on its own and resumes from Last-Event-ID.
+  // Live feed, dropped while the app is in the background.
+  //
+  // An open SSE connection counts as an active connection on Fly, so a
+  // backgrounded tab holding one would keep the machine awake around the
+  // clock. Closing it on hide lets the machine suspend; on return we reopen
+  // from the last message we hold, so nothing is missed in between.
   useEffect(() => {
-    const source = new EventSource("/api/stream");
+    let source: EventSource | null = null;
 
-    source.addEventListener("ready", () => setConnected(true));
-    source.addEventListener("message", (event) => {
-      const message = JSON.parse((event as MessageEvent).data) as Message;
-      setMessages((current) => merge(current, [message]));
-    });
-    source.onerror = () => setConnected(false);
-    source.onopen = () => setConnected(true);
+    const open = () => {
+      if (source || document.visibilityState === "hidden") return;
 
-    return () => source.close();
+      const cursor = lastSeenId.current;
+      source = new EventSource(cursor ? `/api/stream?after=${cursor}` : "/api/stream");
+
+      source.addEventListener("ready", () => setConnected(true));
+      source.addEventListener("message", (event) => {
+        const message = JSON.parse((event as MessageEvent).data) as Message;
+        lastSeenId.current = Math.max(lastSeenId.current, message.id);
+        setMessages((current) => merge(current, [message]));
+      });
+      source.onopen = () => setConnected(true);
+      source.onerror = () => setConnected(false);
+    };
+
+    const close = () => {
+      source?.close();
+      source = null;
+      setConnected(false);
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") open();
+      else close();
+    };
+
+    open();
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      close();
+    };
   }, []);
 
   // Follow the conversation only when the reader is already at the bottom.
@@ -151,6 +185,7 @@ export function ChatRoom({ me }: { me: Me }) {
       }
 
       const data = await response.json();
+      lastSeenId.current = Math.max(lastSeenId.current, data.message.id);
       setMessages((current) => merge(current, [data.message]));
     } catch {
       setError("Offline — message not sent.");

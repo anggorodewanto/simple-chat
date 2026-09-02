@@ -72,9 +72,20 @@ fly logs | grep "Invite code"
 
 Or just log in at `/admin`.
 
-`min_machines_running = 1` keeps one machine awake so SSE connections stay open
-and there are no cold starts. Dropping it to `0` is cheaper but disconnects
-idle clients.
+### Cost
+
+`fly.toml` sets `min_machines_running = 0`, so the machine suspends when nobody
+is using the app and wakes on the next request. Suspend keeps that wake-up fast
+(much faster than a full stop).
+
+This only saves money because the client closes its live stream when the tab is
+hidden. An open SSE connection counts as an active connection, so a
+backgrounded phone holding one would keep the machine awake around the clock.
+See **Realtime** below.
+
+The first request after a suspend takes an extra moment. If that ever feels too
+slow, `min_machines_running = 1` keeps a machine hot at the cost of running it
+24/7.
 
 ### 3. Install on your phone
 
@@ -101,6 +112,10 @@ newer than the client's cursor. The cursor comes from the `Last-Event-ID`
 header, which the browser sends automatically on reconnect, so a phone waking
 from sleep resumes without gaps or duplicates. A comment heartbeat every 25
 seconds keeps proxies from dropping idle connections.
+
+The client closes the stream when the page is hidden and reopens it on return,
+passing `?after=<last message id>` so nothing is missed while it was away. That
+is what lets the Fly machine suspend while the app sits in the background.
 
 **Rate limits.** In-memory and per-instance: 8 admin login attempts and 20
 joins per IP per 10 minutes, and 30 messages per member per 10 seconds. They
