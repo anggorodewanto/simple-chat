@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { sql, toMessage, type MessageRow } from "@/lib/db";
 import { currentMember, MESSAGE_MAX, rateLimit } from "@/lib/auth";
+import { notifyNewMessage } from "@/lib/push";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -62,6 +63,10 @@ export async function POST(request: Request) {
   `;
 
   await sql`update members set last_seen_at = now() where id = ${member.id}`;
+
+  // Awaited on purpose: the machine may suspend as soon as this request ends,
+  // so a detached send could be cut off before it reaches the push services.
+  await notifyNewMessage({ author: member.name, body, senderId: member.id });
 
   return NextResponse.json({ message: toMessage(row) }, { status: 201 });
 }

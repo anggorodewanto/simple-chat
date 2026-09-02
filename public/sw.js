@@ -1,7 +1,7 @@
 // Minimal service worker: it makes the app installable and gives navigations a
 // friendly offline page. Chat data is never cached — a stale conversation is
 // worse than no conversation.
-const CACHE = "simple-chat-v1";
+const CACHE = "simple-chat-v2";
 const SHELL = ["/offline.html", "/icon-192.png", "/icon-512.png", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
@@ -44,5 +44,55 @@ self.addEventListener("fetch", (event) => {
           return response;
         }),
     ),
+  );
+});
+
+// A push arrives whether or not the app is open. If the chat is already on
+// screen the message is being delivered live, so a banner would be noise.
+self.addEventListener("push", (event) => {
+  let payload = { title: "Simple Chat", body: "New message" };
+
+  try {
+    if (event.data) payload = { ...payload, ...event.data.json() };
+  } catch {
+    // Malformed payload: fall back to the generic text above.
+  }
+
+  event.waitUntil(
+    (async () => {
+      const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      const onScreen = clients.some(
+        (client) => client.visibilityState === "visible" && client.focused,
+      );
+
+      if (onScreen) return;
+
+      await self.registration.showNotification(payload.title, {
+        body: payload.body,
+        icon: "/icon-192.png",
+        badge: "/icon-192.png",
+        // One room, so a new message replaces the previous banner.
+        tag: "simple-chat",
+        renotify: true,
+      });
+    })(),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  event.waitUntil(
+    (async () => {
+      const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      const existing = clients.find((client) => client.url.includes("/chat"));
+
+      if (existing) {
+        await existing.focus();
+        return;
+      }
+
+      await self.clients.openWindow("/chat");
+    })(),
   );
 });

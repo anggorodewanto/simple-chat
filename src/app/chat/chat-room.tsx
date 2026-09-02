@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { NotifyButton } from "@/app/chat/notify-button";
 
 type Message = {
   id: number;
@@ -194,6 +195,24 @@ export function ChatRoom({ me }: { me: Me }) {
   }
 
   async function logout() {
+    // Drop this device's push subscription too, or the phone keeps getting
+    // notifications for a room it is no longer in.
+    try {
+      const registration = await navigator.serviceWorker?.ready;
+      const subscription = await registration?.pushManager.getSubscription();
+
+      if (subscription) {
+        await fetch("/api/push", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ endpoint: subscription.endpoint }),
+        });
+        await subscription.unsubscribe();
+      }
+    } catch {
+      // Never block leaving the room on push cleanup.
+    }
+
     await fetch("/api/auth/logout", { method: "POST" });
     router.replace("/");
     router.refresh();
@@ -210,9 +229,15 @@ export function ChatRoom({ me }: { me: Me }) {
             {connected ? "Live" : "Reconnecting…"} · {me.name}
           </p>
         </div>
+        <NotifyButton />
         {me.isAdmin && (
-          <Link href="/admin" className="rounded-lg border border-line px-3 py-1.5 text-sm">
-            Admin
+          <Link
+            href="/admin"
+            aria-label="Admin"
+            title="Admin"
+            className="rounded-lg border border-line px-2.5 py-1.5 text-sm"
+          >
+            ⚙️
           </Link>
         )}
         <button onClick={logout} className="rounded-lg border border-line px-3 py-1.5 text-sm">
