@@ -1,0 +1,30 @@
+# Rename `app` to whatever `fly launch` gives you.
+app = "simple-chat"
+primary_region = "sin"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[deploy]
+  # Applies db/schema.sql before the new version takes traffic.
+  release_command = "node scripts/migrate.mjs"
+
+[env]
+  PORT = "3000"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  # One always-on machine keeps SSE connections alive and avoids cold starts.
+  min_machines_running = 1
+
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 200
+    soft_limit = 150
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
