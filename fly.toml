@@ -1,4 +1,9 @@
-# Rename `app` to whatever `fly launch` gives you.
+# `app` must match the name you made with `fly apps create`.
+# `primary_region` is the airport code nearest your users; "sin" is Singapore.
+# `fly platform regions` lists them all.
+#
+# Prefer `fly apps create` over `fly launch` here: launch regenerates this file
+# and can drop the release command and the scale-to-zero setting below.
 app = "simple-chat"
 primary_region = "sin"
 

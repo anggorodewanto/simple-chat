@@ -59,13 +59,22 @@ connection string (the host contains `-pooler`).
 ### 2. Fly.io
 
 ```bash
-fly launch --no-deploy          # pick a name and region, keep the fly.toml
+fly apps create your-app-name   # then set `app` in fly.toml to match
 fly secrets set \
   DATABASE_URL="postgresql://...-pooler...neon.tech/neondb?sslmode=require" \
   SESSION_SECRET="$(openssl rand -base64 48)" \
   ADMIN_PASSWORD_HASH='<output of npm run hash-password>'
 fly deploy
 ```
+
+Use `fly apps create` rather than `fly launch`: launch regenerates `fly.toml`
+and can drop the release command and the scale-to-zero setting.
+
+Set the secrets **before** the first deploy. The release command needs
+`DATABASE_URL`, and a deploy whose release command fails is rolled back.
+
+Keep `ADMIN_PASSWORD_HASH` in single quotes — a bcrypt hash contains `$`,
+which the shell would otherwise treat as a variable.
 
 `fly.toml` runs `node scripts/migrate.mjs` as the release command, so the
 schema is applied on every deploy before the new version takes traffic. The
