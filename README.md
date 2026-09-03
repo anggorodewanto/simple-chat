@@ -11,6 +11,8 @@ picks a display name. Runs on Fly.io with Neon Postgres.
 - Optional Web Push notifications when the app is closed.
 - Installable to the home screen, with an offline fallback page.
 
+New here? Start with **[DEPLOYING.md](DEPLOYING.md)**.
+
 ## Stack
 
 Next.js 15 (App Router) · TypeScript · Tailwind v4 · Postgres (Neon) · SSE
@@ -51,69 +53,48 @@ as it otherwise would, and the notification toggle simply does not appear.
 
 ## Deploying
 
-### 1. Neon
+**[DEPLOYING.md](DEPLOYING.md) is the full walkthrough** — prerequisites,
+Neon, Fly, notifications, installing on your phone, and troubleshooting.
 
-Create a project at [neon.tech](https://neon.tech) and copy the **pooled**
-connection string (the host contains `-pooler`).
-
-### 2. Fly.io
+The short version, once you have `flyctl` and a Neon database:
 
 ```bash
-fly apps create your-app-name   # then set `app` in fly.toml to match
+npm run hash-password "your password"       # -> ADMIN_PASSWORD_HASH
+fly apps create your-app-name               # then set `app` in fly.toml
 fly secrets set \
-  DATABASE_URL="postgresql://...-pooler...neon.tech/neondb?sslmode=require" \
+  DATABASE_URL="postgresql://...-pooler....neon.tech/neondb?sslmode=require" \
   SESSION_SECRET="$(openssl rand -base64 48)" \
-  ADMIN_PASSWORD_HASH='<output of npm run hash-password>'
+  ADMIN_PASSWORD_HASH='<the $2b$... hash>'
 fly deploy
 ```
 
-Use `fly apps create` rather than `fly launch`: launch regenerates `fly.toml`
-and can drop the release command and the scale-to-zero setting.
+Three things that catch people out, all covered in DEPLOYING.md:
 
-Set the secrets **before** the first deploy. The release command needs
-`DATABASE_URL`, and a deploy whose release command fails is rolled back.
-
-Keep `ADMIN_PASSWORD_HASH` in single quotes — a bcrypt hash contains `$`,
-which the shell would otherwise treat as a variable.
+- Use `fly apps create`, not `fly launch` — launch regenerates `fly.toml` and
+  can drop the release command and the scale-to-zero setting.
+- Set the secrets **before** the first deploy. The release command runs the
+  migration and needs `DATABASE_URL`.
+- Single-quote the bcrypt hash, or your shell will eat the `$` segments.
 
 `fly.toml` runs `node scripts/migrate.mjs` as the release command, so the
 schema is applied on every deploy before the new version takes traffic. The
 schema is idempotent, so repeat deploys are safe.
 
-To read the first invite code:
+### Push notifications (optional)
 
-```bash
-fly logs | grep "Invite code"
-```
-
-Or just log in at `/admin`.
-
-### 3. Push notifications (optional)
-
-Generate a VAPID key pair once. It identifies your server to the browsers' push
-services; there is nothing to sign up for and nothing to pay.
+Generate a VAPID key pair once. It identifies your server to the browsers'
+push services; there is nothing to sign up for and nothing to pay.
 
 ```bash
 npm run generate-vapid
-fly secrets set \
-  VAPID_PUBLIC_KEY="..." \
-  VAPID_PRIVATE_KEY="..." \
-  VAPID_SUBJECT="mailto:you@example.com"
+fly secrets set VAPID_PUBLIC_KEY="..." VAPID_PRIVATE_KEY="..." VAPID_SUBJECT="mailto:you@example.com"
 ```
 
-Members then turn notifications on with the bell in the chat header.
-
-Rotating these keys invalidates every existing subscription, and everyone has
-to re-enable notifications, so generate them once and keep them.
+Rotating these keys invalidates every existing subscription, so generate them
+once and keep them.
 
 **On iPhone and iPad the app must be installed to the Home Screen first.**
-Safari does not offer push to an ordinary browser tab. Android and desktop
-browsers will prompt from a normal tab.
-
-### 4. Install on your phone
-
-Open the site in Safari or Chrome and use **Add to Home Screen**. It then runs
-full-screen with its own icon.
+Safari does not offer push to an ordinary browser tab.
 
 ## Cost
 
@@ -185,6 +166,7 @@ process-local fan-out.
 ## Project layout
 
 ```
+DEPLOYING.md           start-to-finish deployment walkthrough
 db/schema.sql          idempotent schema
 scripts/migrate.mjs    applies the schema, seeds the room
 scripts/hash-password.mjs
