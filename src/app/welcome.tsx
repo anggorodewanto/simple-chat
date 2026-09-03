@@ -48,7 +48,7 @@ export function Welcome({ initialCode }: { initialCode: string }) {
   }
 
   return (
-    <main className="pad-top pad-bottom mx-auto flex min-h-[100dvh] w-full max-w-sm flex-col justify-center gap-8 px-5">
+    <main className="pad-top pad-bottom mx-auto flex min-h-viewport w-full max-w-sm flex-col justify-center gap-8 px-5">
       <header className="text-center">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-accent text-3xl">
           💬

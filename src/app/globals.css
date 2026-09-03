@@ -1,13 +1,12 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@theme {
+/* The colour tokens live in tailwind.config.js so utilities like `bg-panel`
+   resolve. These mirror the two that plain CSS below still reads by name. */
+:root {
   --color-ink: #0b1020;
-  --color-panel: #141b2f;
-  --color-panel-soft: #1c2540;
   --color-line: #263252;
-  --color-accent: #5b8cff;
-  --color-accent-soft: #2b3f78;
-  --color-muted: #93a1c4;
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
@@ -33,6 +32,26 @@ body {
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
 }
 
+/* `dvh` is Chrome 108+. Older Androids take the `vh` line and ignore the
+   second; the only cost there is the address bar eating a little height. */
+.h-viewport {
+  height: 100vh;
+}
+
+.min-h-viewport {
+  min-height: 100vh;
+}
+
+@supports (height: 100dvh) {
+  .h-viewport {
+    height: 100dvh;
+  }
+
+  .min-h-viewport {
+    min-height: 100dvh;
+  }
+}
+
 input,
 textarea,
 button {
@@ -45,6 +64,8 @@ textarea {
   font-size: 16px;
 }
 
+/* Grows the composer to fit its text. Chrome 123+ and Safari 17.4+ do this
+   natively; everywhere else `useAutoGrow` in the composer does it in JS. */
 textarea {
   field-sizing: content;
 }

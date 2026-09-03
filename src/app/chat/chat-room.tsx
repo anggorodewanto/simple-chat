@@ -48,6 +48,7 @@ export function ChatRoom({ me }: { me: Me }) {
   const [error, setError] = useState("");
 
   const scroller = useRef<HTMLDivElement>(null);
+  const composer = useRef<HTMLTextAreaElement>(null);
   const pinnedToBottom = useRef(true);
   // Newest message id held locally; the resume cursor for a reopened stream.
   const lastSeenId = useRef(0);
@@ -131,6 +132,19 @@ export function ChatRoom({ me }: { me: Me }) {
   useEffect(() => {
     if (pinnedToBottom.current) scrollToBottom("smooth");
   }, [messages, scrollToBottom]);
+
+  // Chrome 123+ and Safari 17.4+ grow the composer themselves via
+  // `field-sizing: content`. Older phones would be stuck at one row, so give
+  // them the same behaviour by hand.
+  useEffect(() => {
+    const element = composer.current;
+    if (!element) return;
+    if (CSS.supports("field-sizing", "content")) return;
+
+    // Collapse first, or scrollHeight only ever reports the current height.
+    element.style.height = "auto";
+    element.style.height = `${element.scrollHeight}px`;
+  }, [draft]);
 
   async function loadOlder() {
     const oldest = messages[0];
@@ -219,7 +233,7 @@ export function ChatRoom({ me }: { me: Me }) {
   }
 
   return (
-    <div className="flex h-[100dvh] flex-col">
+    <div className="flex h-viewport flex-col">
       <header className="pad-top flex items-center gap-3 border-b border-line bg-panel px-4 pb-3">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft">💬</div>
         <div className="min-w-0 flex-1">
@@ -316,6 +330,7 @@ export function ChatRoom({ me }: { me: Me }) {
         {error && <p className="mb-2 text-sm text-red-400">{error}</p>}
         <div className="flex items-end gap-2">
           <textarea
+            ref={composer}
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={(event) => {

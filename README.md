@@ -15,7 +15,23 @@ New here? Start with **[DEPLOYING.md](DEPLOYING.md)**.
 
 ## Stack
 
-Next.js 15 (App Router) · TypeScript · Tailwind v4 · Postgres (Neon) · SSE
+Next.js 15 (App Router) · TypeScript · Tailwind v3 · Postgres (Neon) · SSE
+
+### Browser support
+
+Targets Chrome 95+ and Safari 14+, which covers phones back to Android 5.1.
+The target is pinned in `browserslist` in `package.json`.
+
+**Tailwind is held at v3 on purpose — do not upgrade it to v4.** v4 wraps its
+entire output in `@layer`, which Chrome below 99 discards along with every rule
+inside it, and emits `oklch()` and `color-mix()` colours that need Chrome 111.
+The result is a page that loads and works with no styling at all. v3 compiles
+to plain hex/rgb with no cascade layers.
+
+Two other things are handled by hand for the same reason: `100dvh` (Chrome
+108+) has a `100vh` fallback behind `@supports`, via the `.h-viewport` and
+`.min-h-viewport` classes in `globals.css`; and `field-sizing: content`
+(Chrome 123+) has a JS fallback that grows the composer in `chat-room.tsx`.
 
 ## Local development
 

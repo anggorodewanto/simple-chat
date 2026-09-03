@@ -46,7 +46,7 @@ export function AdminPanel() {
   }
 
   return (
-    <main className="pad-top pad-bottom mx-auto flex min-h-[100dvh] w-full max-w-sm flex-col gap-6 px-5">
+    <main className="pad-top pad-bottom mx-auto flex min-h-viewport w-full max-w-sm flex-col gap-6 px-5">
       <header className="flex items-center justify-between">
         <h1 className="text-xl font-bold">Admin</h1>
         <Link href="/chat" className="rounded-lg border border-line px-3 py-1.5 text-sm">
