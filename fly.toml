@@ -4,7 +4,7 @@
 #
 # Prefer `fly apps create` over `fly launch` here: launch regenerates this file
 # and can drop the release command and the scale-to-zero setting below.
-app = "simple-chat"
+app = "simple-chat-dewa"
 primary_region = "sin"
 
 [build]
