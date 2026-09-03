@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { QRCodeSVG } from "qrcode.react";
 
 type RoomInfo = { inviteCode: string; memberCount: number; messageCount: number };
 
@@ -60,6 +61,16 @@ export function AdminPanel() {
           <section className="rounded-2xl border border-line bg-panel p-5">
             <h2 className="text-sm text-muted">Invite code</h2>
             <p className="mt-2 font-mono text-3xl tracking-[0.2em]">{room.inviteCode}</p>
+
+            {/* White background and a quiet zone: scanners need the light margin. */}
+            {inviteLink && (
+              <div className="mt-4 flex flex-col items-center gap-2">
+                <div className="rounded-xl bg-white p-3">
+                  <QRCodeSVG value={inviteLink} size={180} level="M" marginSize={0} />
+                </div>
+                <p className="text-xs text-muted">Scan to join — the code fills itself in.</p>
+              </div>
+            )}
 
             <button
               onClick={share}
