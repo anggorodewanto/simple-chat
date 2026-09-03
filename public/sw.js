@@ -1,7 +1,7 @@
 // Minimal service worker: it makes the app installable and gives navigations a
 // friendly offline page. Chat data is never cached — a stale conversation is
 // worse than no conversation.
-const CACHE = "simple-chat-v2";
+const CACHE = "simple-chat-v3";
 const SHELL = ["/offline.html", "/icon-192.png", "/icon-512.png", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
