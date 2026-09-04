@@ -67,7 +67,12 @@ export async function notifyNewMessage(options: {
           keys: { p256dh: subscription.p256dh, auth: subscription.auth },
         },
         payload,
-        { TTL: 60 * 60 * 24 },
+        // `urgency` defaults to "normal", which Android's Doze batches into
+        // maintenance windows — that is the minutes-late delivery. "high" is
+        // allowed to wake the device. `topic` lets the push service replace an
+        // undelivered message instead of queuing a backlog, matching the
+        // `tag` the service worker collapses banners with.
+        { TTL: 60 * 60 * 24, urgency: "high", topic: "simple-chat" },
       ),
     ),
   );
